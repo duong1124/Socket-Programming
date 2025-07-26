@@ -1,11 +1,9 @@
 # Python cache and compiled files
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+#*.pyc
+#*.pyo
+#*.pyd
 
 # IDE and editor files
 .vscode/
-.idea/
-*.swp
-*.swo
