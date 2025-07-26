@@ -37,29 +37,21 @@ def broadcast_clients(message, senderSocket):
             try: 
                 clientSocket.send(formatted_message.encode())
             except: # send fail
-                disconnect_closeSocket(clientSocket)
-                                             
-def client_receive(clientSocket):
-    while True:
-        try:
-            message = clientSocket.recv(1024).decode()
-            if message:
-                print(message)
-            else:
-                break
-        except: # connection error
+                disconnect_closeSocket(clientSocket)                                      
+
+def socket_by_name(target_username):
+    targetSocket = None
+    for clientSocket, client_info in clients.items():
+        if client_info["username"] == target_username:
+            targetSocket = clientSocket
             break
-        
+    return targetSocket 
+
 # ======================================= ADDITIONAL FEATURES FUNCTION =======================================
 
-def send_private_message(message, senderSocket, target_username):
-    # Find target socket by target_username, linear search
-    targetSocket = None
-    for client_socket, client_info in clients.items():
-        if client_info["username"] == target_username:
-            targetSocket = client_socket
-            break
-    
+def send_private_message(message, senderSocket, target_username):    
+    targetSocket = socket_by_name(target_username)
+
     sender_username = clients[senderSocket]["username"] if senderSocket in clients else "?"
     if targetSocket:
         private_message = f"[{get_time()}] [PRIVATE] [{sender_username}]: {message}"
