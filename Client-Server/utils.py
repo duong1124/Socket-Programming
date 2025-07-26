@@ -1,4 +1,4 @@
-from config import clients, GET_LIST_MSG, EXIT_MSG
+from config import clients, admin_requests
 from datetime import datetime
 
 def get_time():
@@ -10,8 +10,11 @@ def username_list() -> list:
 def disconnect_closeSocket(connection):
     if connection in clients:
         username = clients[connection]["username"]
-        
         del clients[connection]
+        
+        if username in admin_requests:
+            del admin_requests[username]
+            
         broadcast_all(f"{username} left the chat.")
         
     connection.close()
@@ -27,7 +30,7 @@ def broadcast_all(message):
             
 def broadcast_clients(message, senderSocket):
     sender_username = clients[senderSocket]["username"] if senderSocket in clients else "?"
-    formatted_message = f"[{get_time()} {sender_username}: {message}]"
+    formatted_message = f"[{get_time()}] {sender_username}: {message}"
     
     for clientSocket in list(clients.keys()):
         if clientSocket != senderSocket:
@@ -35,7 +38,7 @@ def broadcast_clients(message, senderSocket):
                 clientSocket.send(formatted_message.encode())
             except: # send fail
                 disconnect_closeSocket(clientSocket)
-                
+                                             
 def client_receive(clientSocket):
     while True:
         try:
@@ -47,3 +50,23 @@ def client_receive(clientSocket):
         except: # connection error
             break
         
+# ======================================= ADDITIONAL FEATURES FUNCTION =======================================
+
+def send_private_message(message, senderSocket, target_username):
+    # Find target socket by target_username, linear search
+    targetSocket = None
+    for client_socket, client_info in clients.items():
+        if client_info["username"] == target_username:
+            targetSocket = client_socket
+            break
+    
+    sender_username = clients[senderSocket]["username"] if senderSocket in clients else "?"
+    if targetSocket:
+        private_message = f"[{get_time()}] [PRIVATE] [{sender_username}]: {message}"
+        try:
+            targetSocket.send(private_message.encode())
+        
+        except:
+            senderSocket.send(f"[{get_time()}] Can't send private message to {target_username}".encode())
+    else:
+        senderSocket.send(f"[{get_time()}] {target_username} can't be found!".encode())

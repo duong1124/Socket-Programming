@@ -22,8 +22,9 @@ def handle_client(connectionSocket, addr):
         # Save client
         clients[connectionSocket] = {"username" : username , "addr" : addr}
         
-        # Welcome the new client
+        # Welcome message
         welcome_message = f"Welcome {username} to the chat."
+        welcome_message += "Type /option for options."
         connectionSocket.send(welcome_message.encode()) # send to new client
         broadcast_clients(f"{username} has joined the chat.", connectionSocket) # send to the other clients
         
@@ -48,6 +49,24 @@ def handle_client(connectionSocket, addr):
                     command_message = f"Available options:\n{command_list}"
                     connectionSocket.send(command_message.encode())
                 
+                # 4. Private message
+                elif message.startswith(PRIVATE_MSG):
+                    name_msg = message[4:].split(' ', 1)
+                    if len(name_msg) >= 2: 
+                        target_username, message = name_msg
+                        send_private_message(message, connectionSocket, target_username)
+                    else:
+                        connectionSocket.send("Wrong format. Must be /pm <username> <message>".encode())
+                
+                # 5. Get infor message
+                elif message == GET_INFO:
+                    clientSocket = clients[connectionSocket]
+                    client_username = clientSocket["username"]
+                    clientIP, clientPORT = clientSocket["addr"]
+                    
+                    infor_message = f"Username: {client_username}\nAddress: {clientIP}:{clientPORT}"
+                    connectionSocket.send(infor_message.encode())
+                    
                 # 0. Normal message                        
                 elif message:
                     current_username = clients[connectionSocket]["username"]

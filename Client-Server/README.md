@@ -1,4 +1,5 @@
 - username
+- get info
 - /list hien thi danh sach hien tai
 - private chat
 - live chat room xin quyen admin
