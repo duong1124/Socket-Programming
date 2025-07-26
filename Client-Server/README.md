@@ -1,0 +1,9 @@
+- username
+- /list hien thi danh sach hien tai
+- private chat
+- live chat room xin quyen admin
+- ma hoa tin nhan - ssl/cryptography
+- hien thi thoi gian gui
+- file transfer TCP
+- admin broadcast he thong - admin nhan tin
+- admin control - /kick hoac /mute
