@@ -4,8 +4,16 @@ from config import *
 from utils import *
 import json 
 import os
+import ssl
+
+CERTIFICATE_FILE = 'server.crt'
+PRIVATE_KEY_FILE = 'server.key'
 
 serverIP = s.gethostbyname(s.gethostname())
+
+# Create SSL context
+ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH) # client verify server
+ssl_context.load_cert_chain(certfile=CERTIFICATE_FILE, keyfile=PRIVATE_KEY_FILE)
 
 serverSocket = s.socket(s.AF_INET, s.SOCK_STREAM) # TCP
 serverSocket.bind((serverIP, PORT))
@@ -21,13 +29,21 @@ def handle_admin():
 def handle_file_loop():
     while True:
         try:
-            fileConnection, file_addr = fileSocket.accept()
-            thread = threading.Thread(target=handle_file, args = (fileConnection, file_addr), daemon=True)
-            thread.start()
-        except:
+            nonSecure_fileConnection, _ = fileSocket.accept()
+            
+            try:
+                fileConnection = ssl_context.wrap_socket(nonSecure_fileConnection, server_side = True)
+                file_thread = threading.Thread(target=handle_file, args = (fileConnection, ), daemon=True)
+                file_thread.start()
+            except ssl.SSLError as s:
+                print(f"SSL Handshake Error: {s}")
+                nonSecure_fileConnection.close()
+                
+        except Exception as e:
+            print(f"Error in handle_file_loop: {e}")
             break
         
-def handle_file(fileConnection, file_addr):
+def handle_file(fileConnection):
     """For receiving file on PORT_FILE"""
     try:
         metadata_file = fileConnection.recv(1024).decode()
@@ -58,7 +74,7 @@ def handle_file(fileConnection, file_addr):
         fileConnection.send("FTP")
         
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Error in handle_file: {e}")
         
     fileConnection.close()
 
@@ -142,15 +158,17 @@ def handle_client(connectionSocket, addr):
                 
                 # . No content message    
                 else:
-                    # continue
+                    #continue
                     disconnect_closeSocket(connectionSocket)
                     break
             
-            except:
+            except Exception as e:
+                print("")
                 disconnect_closeSocket(connectionSocket)
                 break
         
-    except: # Error while connecting ?
+    except Exception as e: # Error while connecting ?
+        print("Connection error: {e}")
         disconnect_closeSocket(connectionSocket)
 
 # Initialize thread for file transfer server
@@ -162,12 +180,16 @@ print(f"File Server is running on {serverIP}:{PORT_FILE}")
 
 while True:
     try:
-        connectionSocket, addr = serverSocket.accept() # !BLOCKING
-        
-        # Create one thread to handle that client
-        thread = threading.Thread(target=handle_client, args=(connectionSocket, addr), daemon=True)
-        thread.start()
-        
+        nonSecure_connectionSocket, addr = serverSocket.accept() # !BLOCKING
+        try:
+            connectionSocket = ssl_context.wrap_socket(nonSecure_connectionSocket, server_side = True)
+            thread = threading.Thread(target=handle_client, args=(connectionSocket, addr), daemon=True)
+            thread.start()
+            
+        except Exception as e:
+            print("SSL Handshake Error: {e}")
+            connectionSocket.close()
+                        
     except KeyboardInterrupt:
         serverSocket.close()
         fileSocket.close()

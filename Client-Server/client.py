@@ -4,16 +4,21 @@ import sys
 from config import *
 import json 
 import os
+import ssl
 
-clientSocket = s.socket(s.AF_INET, s.SOCK_STREAM)
+CA_FILE = 'ca.crt'
+
+nonSecure_clientSocket = s.socket(s.AF_INET, s.SOCK_STREAM)
+
+ssl_context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+ssl_context.load_verify_locations(cafile = CA_FILE)
 
 def client_receive(clientSocket):
     while True:
         try:
             message = clientSocket.recv(1024).decode()
             if message:
-                # Check for file transfer
-                try:
+                try: # Check for file transfer
                     data = json.loads(message)
                     if data.get("command") == "file_transfer":
                         upload_file(data)
@@ -70,6 +75,7 @@ def upload_file(file_info):
         print(f"Error SENDING FILE: {e}")
 
 try: 
+    clientSocket = ssl_context.wrap_context(nonSecure_clientSocket, server_hostname = SERVER_IP)
     clientSocket.connect((SERVER_IP, PORT))
 
     receive_thread = threading.Thread(target = client_receive, args = (clientSocket,), daemon=True)
