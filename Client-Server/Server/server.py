@@ -1,7 +1,7 @@
 import socket as s
 import threading
-from config import *
-from utils import *
+from utils.utils import *
+from utils.config import *
 import json 
 import os
 import ssl
@@ -23,7 +23,7 @@ fileSocket = s.socket(s.AF_INET, s.SOCK_STREAM)
 fileSocket.bind((serverIP, PORT_FILE))
 fileSocket.listen(MAX_USERS)
 
-def handle_admin():
+def handle_admin_command():
     pass 
 
 def handle_file_loop():

@@ -1,7 +1,7 @@
 import socket as s
 import threading
 import sys
-from config import *
+from utils.config import SERVER_IP, PORT, PORT_FILE, EXIT_MSG
 import json 
 import os
 import ssl
@@ -13,25 +13,6 @@ nonSecure_clientSocket = s.socket(s.AF_INET, s.SOCK_STREAM)
 ssl_context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
 ssl_context.load_verify_locations(cafile = CA_FILE)
 
-def client_receive(clientSocket):
-    while True:
-        try:
-            message = clientSocket.recv(1024).decode()
-            if message:
-                try: # Check for file transfer
-                    data = json.loads(message)
-                    if data.get("command") == "file_transfer":
-                        upload_file(data)
-                        continue
-                except:
-                    pass 
-                
-                print(message)
-            else:
-                break
-        except: # connection error
-            break
-        
 def upload_file(file_info):
     pathname, sender, receiver = file_info["filename"], file_info["sender"], file_info["receiver"]
     
@@ -74,6 +55,25 @@ def upload_file(file_info):
     except Exception as e:
         print(f"Error SENDING FILE: {e}")
 
+def client_receive(clientSocket):
+    while True:
+        try:
+            message = clientSocket.recv(1024).decode()
+            if message:
+                try: # Check for file transfer
+                    data = json.loads(message)
+                    if data.get("command") == "file_transfer":
+                        upload_file(data)
+                        continue
+                except:
+                    pass 
+                
+                print(message)
+            else:
+                break
+        except: # connection error
+            break
+        
 try: 
     clientSocket = ssl_context.wrap_context(nonSecure_clientSocket, server_hostname = SERVER_IP)
     clientSocket.connect((SERVER_IP, PORT))
